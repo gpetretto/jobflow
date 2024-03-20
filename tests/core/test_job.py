@@ -21,6 +21,7 @@ def test_job_init():
     assert test_job.function_kwargs == {}
     assert test_job.uuid is not None
     assert test_job.output.uuid == test_job.uuid
+    assert test_job.profiles is None
 
     # test init no args
     test_job = Job(function=add, function_args=())
@@ -71,6 +72,16 @@ def test_job_init():
 
     test_job.name += "xyz"
     assert test_job.name == "abcxyz"
+
+    # test init with profiles
+    test_job = Job(function=add, function_args=("I am a job",), profiles="test_profile")
+    assert test_job.profiles == ["test_profile"]
+    test_job = Job(
+        function=add,
+        function_args=("I am a job",),
+        profiles=["test_profile1", "test_profile2"],
+    )
+    assert test_job.profiles == ["test_profile1", "test_profile2"]
 
 
 def test_job_run(capsys, memory_jobstore, memory_data_jobstore):

@@ -254,6 +254,9 @@ class Job(MSONable):
     config_updates
         A list of updates for the config that will be applied to any Flow/Job generated
         by the job.
+    profiles
+        A list of strings tagging the Job. Typically used to identify the best
+        kind of resources required for execution.
     **kwargs
         Additional keyword arguments that can be used to specify which outputs to save
         in additional stores. The argument name gives the additional store name and the
@@ -313,6 +316,7 @@ class Job(MSONable):
         hosts: list[str] = None,
         metadata_updates: list[dict[str, Any]] = None,
         config_updates: list[dict[str, Any]] = None,
+        profiles: str | list[str] = None,
         **kwargs,
     ):
         from copy import deepcopy
@@ -338,6 +342,9 @@ class Job(MSONable):
         self.hosts = hosts or []
         self.metadata_updates = metadata_updates or []
         self.config_updates = config_updates or []
+        if isinstance(profiles, str):
+            profiles = [profiles]
+        self.profiles = profiles
         self._kwargs = kwargs
 
         if sum(v is True for v in kwargs.values()) > 1:
