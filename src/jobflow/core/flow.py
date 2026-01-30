@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
     from networkx import DiGraph
 
-    from jobflow import Job
+    from jobflow import Job, Maker
 
 
 logger = logging.getLogger(__name__)
@@ -137,6 +137,9 @@ class Flow(MSONable):
         hosts: list[str] = None,
         metadata: dict[str, Any] = None,
         metadata_updates: list[dict[str, Any]] = None,
+        maker: Maker | None = None,
+        make_args: list | None = None,
+        make_kwargs: dict | None = None,
     ):
         from jobflow.core.job import Job
 
@@ -156,6 +159,10 @@ class Flow(MSONable):
         self._jobs: tuple[Flow | Job, ...] = ()
         self.add_jobs(jobs)
         self.output = output
+
+        self.maker = maker
+        self.make_args = make_args
+        self.make_kwargs = make_kwargs
 
         # If we're running inside a `DecoratedFlow`, add *this* Flow to the
         # context.
