@@ -11,6 +11,7 @@ from typing import cast, overload
 from monty.json import MSONable, jsanitize
 from typing_extensions import Self
 
+from jobflow.core.flow import _current_flow_context
 from jobflow.core.reference import OnMissing, OutputReference
 from jobflow.utils.uid import suid
 
@@ -383,6 +384,30 @@ class Job(MSONable):
                 f"inputs to your Job.",
                 stacklevel=2,
             )
+
+        # If we're running inside a `DecoratedFlow`, add *this* Job to the
+        # context.
+        current_flow_children_list = _current_flow_context.get()
+        if current_flow_children_list is not None:
+            current_flow_children_list.append(self)
+
+    def __getitem__(self, key: Any) -> OutputReference:
+        """
+        Get the corresponding `OutputReference` for the `Job`.
+
+        This is for when it is indexed like a dictionary or list.
+
+        Parameters
+        ----------
+        key
+            The index/key.
+
+        Returns
+        -------
+        OutputReference
+            The equivalent of `Job.output[k]`
+        """
+        return self.output[key]
 
     def __repr__(self):
         """Get a string representation of the job."""
@@ -1279,6 +1304,21 @@ class Response(typing.Generic[T]):
         Response
             The job response controlling the data to store and flow execution options.
         """
+        # If the Job returns another Job, or something that can be interpreted
+        # as an iterable of jobs, interpret it as a replace.
+        from jobflow import Flow
+
+        def is_job_or_flow(x):
+            return isinstance(x, Job | Flow)
+
+        should_replace = is_job_or_flow(job_returns)
+        if isinstance(job_returns, (list, tuple)):
+            should_replace = all(is_job_or_flow(resp) for resp in job_returns)
+
+        if should_replace:
+            job_returns = Response(replace=job_returns)
+
+        # only apply output schema if there is no replace.
         if isinstance(job_returns, Response):
             if job_returns.replace is None:
                 # only apply output schema if there is no replace.
